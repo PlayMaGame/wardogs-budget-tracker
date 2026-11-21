@@ -8,5 +8,17 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+
+tasklist /FI "IMAGENAME eq WardogsClient-Win64-Shipping.exe" 2>nul | find /I "WardogsClient-Win64-Shipping.exe" >nul
+if errorlevel 1 (
+    echo.
+    echo WARDOGS is not running.
+    echo Start WARDOGS first, wait until you are in the game, then run this file.
+    echo Starting the tracker first can make Steam think the game is already running.
+    echo.
+    pause
+    exit /b 1
+)
+
 python cash_tracker.py --stay
 if errorlevel 1 pause

@@ -17,8 +17,14 @@ Tracks your WARDOGS cash, sessions, matches, and the in-game gold-bar market.
    pip install -r requirements.txt
    ```
 
-3. Double-click **`start_cash_tracker.bat`**.
-4. Start WARDOGS. The overlay appears in the top-left while the game is focused.
+3. Start **WARDOGS** first and wait until you are in the game (menu or match).
+4. Then double-click **`start_cash_tracker.bat`**. The overlay appears in the
+   top-left while the game is focused.
+
+> **Start the game first.** If the tracker is started before WARDOGS, Steam can
+> think the game is already running because the tracker initializes the same
+> app ID (`steam_appid.txt`). The launcher checks for the game process and will
+> stop with a reminder if WARDOGS is not running yet.
 
 The tracker creates a local `data/` folder for your history. Nothing is uploaded.
 
@@ -57,6 +63,8 @@ The colour and stars are based on a rolling 90-day window:
 ## Troubleshooting
 
 - **"Python was not found"** — reinstall Python with *Add Python to PATH* ticked.
+- **Steam says WARDOGS is running when it is not** — close the tracker, start
+  WARDOGS first, then start the tracker again.
 - **No overlay** — the overlay only shows while WARDOGS is the focused window.
 - **Dashboard unreachable from another device** — allow Python on the Private
   firewall profile and use the PC's LAN IP, not `localhost`.
