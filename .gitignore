@@ -18,6 +18,12 @@ null
 Inventory.png
 slot1.png
 
+# Development-only files (not part of the runtime package)
+test_*.py
+docs/
+start_dashboard.bat
+allow_dashboard_firewall.ps1
+
 # Not part of the cash tracker
 keymapper.py
 keytest_visual.py

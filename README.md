@@ -1,59 +1,62 @@
 # WARDOGS Cash Tracker
 
-A Windows cash tracker for **WARDOGS** (Steam app ID `1867240`) with a click-through in-game overlay and a LAN dashboard.
+Tracks your WARDOGS cash, sessions, matches, and the in-game gold-bar market.
 
-It reads the game's local cash values, keeps per-session and per-match history, and shows live earnings, match profit, cash per hour, FPS, and the current gold-bar price.
-
-## Features
-
-- In-game overlay: session/match label, balance, spent, gained, cash/hour, FPS, and gold price.
-- Gold price: 90-day rolling low, median, star rating, and buy/fair/wait zone. Hover the dashboard card for a 90-day chart; hold **F8** in game for the match and gold charts.
-- Dashboard: live stats, session graphs, match list, insights, season management, and CSV export.
-- Gold data comes from the public MetaForge market endpoint and falls back to the last cached reading when offline.
-
-## Requirements
+## What you need
 
 - Windows 10/11
-- Python 3.11+
-- WARDOGS installed through Steam
-- `pip install -r requirements.txt`
+- Python 3.11 or newer (tick **Add Python to PATH** during install)
+- WARDOGS on Steam
 
-## Run
+## Run it
 
-Start the tracker and overlay:
+1. Download this repository (`Code` > `Download ZIP`) or clone it.
+2. Open a terminal in the folder and install the one dependency:
 
-```bat
-start_cash_tracker.bat
-```
+   ```bat
+   pip install -r requirements.txt
+   ```
 
-or:
+3. Double-click **`start_cash_tracker.bat`**.
+4. Start WARDOGS. The overlay appears in the top-left while the game is focused.
 
-```bat
-python cash_tracker.py --stay
-```
+The tracker creates a local `data/` folder for your history. Nothing is uploaded.
 
-Start only the dashboard:
+## Overlay
 
-```bat
-start_dashboard.bat
-```
+Shows balance, spent, gained, cash per hour, FPS, and the current gold-bar price.
 
-or:
+**Hold F8** in game to open the current-match cash graph and the 90-day gold chart.
+Release F8 to close it. The overlay is click-through and never blocks your mouse.
 
-```bat
-python dashboard.py --host 0.0.0.0 --port 8756
-```
+## Dashboard
 
-The dashboard is read-only and has no login. It is intended for a trusted local network only; do not expose it to the internet.
+Open **http://localhost:8765** while the tracker is running.
 
-## Tests
+To view it from your phone or another PC:
 
 ```bat
-python -m unittest discover -p "test_*.py"
+python dashboard.py --host 0.0.0.0
 ```
 
-## Notes
+Allow Python through Windows Firewall, then open `http://<your-pc-ip>:8765`.
+The dashboard is read-only and has no login, so only use it on a network you trust.
 
-- The overlay is click-through and only appears while WARDOGS is the foreground window.
-- F8 is polled, not captured, so the game still receives the key.
-- Match and cash history stays in `data/` and is not committed.
+## Gold price
+
+The gold price is public market data from MetaForge, refreshed every five minutes.
+The colour and stars are based on a rolling 90-day window:
+
+- ★★★ at or below the 90-day low
+- ★★☆ within 1.4x the low
+- ★☆☆ within 1.7x the low
+- green at or below 2x the low
+- amber at or below the 90-day median
+- red above the median
+
+## Troubleshooting
+
+- **"Python was not found"** — reinstall Python with *Add Python to PATH* ticked.
+- **No overlay** — the overlay only shows while WARDOGS is the focused window.
+- **Dashboard unreachable from another device** — allow Python on the Private
+  firewall profile and use the PC's LAN IP, not `localhost`.
