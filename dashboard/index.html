@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wardogs Cash Dashboard</title>
+<style>
+  :root {
+    --bg: #080c11;
+    --panel: #0f151d;
+    --panel2: #141c26;
+    --line: #23303d;
+    --text: #dce7f2;
+    --dim: #7f93a8;
+    --green: #5feb82;
+    --red: #ff6262;
+    --yellow: #f4c95d;
+    --cyan: #58dff5;
+    --blue: #79a9ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 15% -10%, #102130 0%, var(--bg) 55%);
+    color: var(--text);
+    font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 18px 50px; }
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(145deg, #1d3a4f, #10202c); border: 1px solid #2b4a60;
+    color: var(--cyan); font-weight: 800; letter-spacing: .5px;
+  }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+  .subtitle { margin: 2px 0 0; color: var(--dim); font-size: 12px; }
+  .status { display: flex; align-items: center; gap: 10px; color: var(--dim); font-size: 12px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel); font-weight: 700; letter-spacing: .7px;
+    font-size: 11px;
+  }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
+  .pill.live { color: var(--green); border-color: #24523a; background: #0e1d16; }
+  .pill.live::before { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .pill.idle { color: var(--yellow); border-color: #4d3f1d; background: #1c180d; }
+  .pill.idle::before { background: var(--yellow); }
+
+  nav.tabs { display: flex; gap: 6px; margin: 22px 0 16px; border-bottom: 1px solid var(--line); }
+  nav.tabs button {
+    background: transparent; color: var(--dim); border: 0; border-bottom: 2px solid transparent;
+    padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; letter-spacing: .3px;
+  }
+  nav.tabs button:hover { color: var(--text); }
+  nav.tabs button.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+  button.danger {
+    background: #3a1414; color: #ffb0b0; border: 1px solid #6b2a2a; border-radius: 8px;
+    padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer;
+  }
+  button.danger:hover:not(:disabled) { background: #4a1919; border-color: #8a3535; }
+  button.danger:disabled { opacity: .45; cursor: not-allowed; }
+
+  .season-bar {
+    display: flex; align-items: center; gap: 10px; margin-top: 18px; padding: 9px 12px;
+    border: 1px solid var(--line); background: var(--panel); border-radius: 10px;
+  }
+  .season-label { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .9px; font-weight: 700; }
+  .season-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .season-tabs button {
+    background: #0b1118; color: var(--dim); border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 11px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .season-tabs button:hover { color: var(--text); border-color: #356078; }
+  .season-tabs button.active { color: var(--cyan); border-color: #356078; background: #12212c; }
+
+  .banner {
+    margin-top: 12px; padding: 9px 12px; border: 1px solid #4d3f1d; background: #1c180d;
+    color: var(--yellow); border-radius: 9px; font-size: 12px;
+  }
+  .banner[hidden] { display: none; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
+    padding: 18px; background: rgba(3, 7, 11, .74);
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal {
+    width: min(540px, 100%); background: linear-gradient(180deg, var(--panel2), var(--panel));
+    border: 1px solid #2a3a49; border-radius: 14px; padding: 20px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
+  }
+  .modal h2 { margin: 0 0 10px; font-size: 18px; }
+  .modal p { color: var(--dim); font-size: 13px; line-height: 1.55; margin: 8px 0; }
+  .modal code {
+    background: #0b1118; border: 1px solid var(--line); border-radius: 5px;
+    padding: 1px 5px; color: var(--text);
+  }
+  .modal label {
+    display: block; margin-top: 16px; color: var(--dim); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .8px; font-weight: 700;
+  }
+  .modal input { width: 100%; margin-top: 6px; }
+  .modal .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .toast {
+    position: fixed; right: 20px; bottom: 20px; z-index: 120; padding: 11px 14px;
+    background: #0e1d16; border: 1px solid #24523a; color: var(--green);
+    border-radius: 10px; font-weight: 700; box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+  }
+  .toast[hidden] { display: none; }
+
+  section[hidden] { display: none !important; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; }
+  .card {
+    background: linear-gradient(180deg, var(--panel2), var(--panel));
+    border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px;
+  }
+  .card .label { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .9px; }
+  .card .value { font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .card .sub { color: var(--dim); font-size: 12px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .gold-card { cursor: help; }
+  #gold-slot, #live-cards-body { display: contents; }
+  .gold-card .stars { font-size: 14px; letter-spacing: 2px; margin-top: 1px; font-weight: 700; }
+  .gold-card .stars .on { color: var(--yellow); }
+  .gold-card .rec { font-size: 10px; letter-spacing: .7px; margin-left: 8px; vertical-align: 1px; }
+  .gold-card.buy { border-color: #24523a; }
+  .gold-card.buy .value, .gold-card.buy .rec { color: var(--green); }
+  .gold-card.fair { border-color: #4d3f1d; }
+  .gold-card.fair .value, .gold-card.fair .rec { color: var(--yellow); }
+  .gold-card.wait { border-color: #5a2626; }
+  .gold-card.wait .value, .gold-card.wait .rec { color: var(--red); }
+
+  .gold-pop {
+    position: fixed; z-index: 95; width: min(560px, calc(100vw - 16px));
+    background: linear-gradient(180deg, var(--panel2), var(--panel));
+    border: 1px solid #2a3a49; border-radius: 12px; padding: 14px;
+    box-shadow: 0 22px 70px rgba(0, 0, 0, .65);
+  }
+  .gold-pop[hidden] { display: none; }
+  .gp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .gp-title { font-weight: 700; font-size: 13px; }
+  .gp-sub { color: var(--dim); font-size: 11px; margin-top: 2px; }
+  .gp-price { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .gp-price.buy { color: var(--green); }
+  .gp-price.fair { color: var(--yellow); }
+  .gp-price.wait { color: var(--red); }
+  .gp-stars { color: var(--yellow); letter-spacing: 2px; font-size: 14px; }
+  .gold-chart { margin-top: 8px; }
+  .chart.gold-chart .line { stroke: var(--yellow); }
+  .chart.gold-chart .area { fill: rgba(244, 201, 93, .10); }
+  .chart.gold-chart .dot { fill: var(--yellow); }
+  .gold-chart .lowline { stroke: var(--green); stroke-width: 1; stroke-dasharray: 4 4; opacity: .8; }
+  .gold-chart .buyline { stroke: #3f9e5c; stroke-width: 1; stroke-dasharray: 2 5; opacity: .9; }
+  .gold-chart .medline { stroke: var(--red); stroke-width: 1; stroke-dasharray: 4 4; opacity: .65; }
+  .gp-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; color: var(--dim); font-size: 11px; }
+  .gp-legend .sw { display: inline-block; width: 16px; margin-right: 4px; border-top: 2px dashed var(--green); vertical-align: middle; }
+  .gp-legend .sw.buy { border-color: #3f9e5c; border-top-style: dotted; }
+  .gp-legend .sw.med { border-color: var(--red); }
+  .gp-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; color: var(--dim); font-size: 11px; }
+  .gp-foot .off { color: var(--yellow); }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .zero { color: var(--text); }
+  .muted { color: var(--dim); }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel2), var(--panel));
+    border: 1px solid var(--line); border-radius: 13px; padding: 16px; margin-top: 14px;
+  }
+  .panel h2 { margin: 0 0 12px; font-size: 15px; letter-spacing: .3px; }
+  .panel h2 .muted { font-weight: 400; font-size: 12px; margin-left: 8px; }
+  .row { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+  @media (max-width: 820px) { .row { grid-template-columns: 1fr; } header.top { align-items: flex-start; flex-direction: column; } }
+
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 9px; border-bottom: 1px solid #1a2530; white-space: nowrap; }
+  th { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .7px; font-weight: 700; }
+  tbody tr:hover { background: #121b25; }
+  tbody tr.clickable { cursor: pointer; }
+  td.num, th.num { text-align: right; }
+  .small { font-size: 12px; }
+
+  .badge {
+    display: inline-block; padding: 1px 6px; border-radius: 5px; font-size: 10px; font-weight: 700;
+    letter-spacing: .4px; margin-left: 5px; border: 1px solid var(--line); color: var(--dim);
+  }
+  .badge.partial { color: var(--yellow); border-color: #4d3f1d; }
+  .badge.active { color: var(--green); border-color: #24523a; }
+  .badge.resumed { color: var(--blue); border-color: #243a5e; }
+  .badge.interrupted { color: var(--red); border-color: #5a2626; }
+
+  .events { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow: auto; }
+  .event { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; align-items: center; padding: 7px 9px; border: 1px solid #1b2732; border-radius: 8px; background: #0c1219; }
+  .event .kind { font-size: 11px; text-transform: uppercase; letter-spacing: .7px; color: var(--dim); }
+  .event .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .event .bal { color: var(--dim); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  input, select, button.act {
+    background: #0b1118; color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 10px; font: inherit; outline: none;
+  }
+  input:focus, select:focus { border-color: #356078; }
+  input[type="search"] { min-width: 190px; }
+  button.act { cursor: pointer; font-weight: 700; color: var(--cyan); }
+  button.act:hover { border-color: #356078; }
+  button.ghost { color: var(--dim); cursor: pointer; font-weight: 700; background: transparent; border: 0; }
+
+  .detail { margin-top: 16px; }
+  .detail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .detail-head h2 { margin: 0; }
+  .chart { width: 100%; height: auto; display: block; background: #0a1016; border: 1px solid #1b2732; border-radius: 10px; }
+  .chart .line { fill: none; stroke: var(--cyan); stroke-width: 2.5; }
+  .chart .area { fill: rgba(88, 223, 245, .10); }
+  .chart .zero { stroke: #3a4c5c; stroke-width: 1; stroke-dasharray: 4 4; }
+  .chart .grid { stroke: #16222d; stroke-width: 1; }
+  .chart .monthline { stroke: #2b3a48; stroke-width: 1; stroke-dasharray: 2 4; }
+  .chart .dot { fill: var(--cyan); stroke: #0a1016; stroke-width: 1.5; }
+  .chart .axis { fill: var(--dim); font-size: 10px; font-family: inherit; }
+
+  .bars { display: flex; flex-direction: column; gap: 7px; }
+  .bar-row { display: grid; grid-template-columns: 92px 1fr 90px; gap: 9px; align-items: center; font-size: 12px; }
+  .bar-track { height: 8px; background: #0b1118; border-radius: 99px; overflow: hidden; border: 1px solid #1a2530; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, #2d7d90, var(--cyan)); border-radius: 99px; }
+  .bar-fill.neg { background: linear-gradient(90deg, #7d2d2d, var(--red)); }
+  .bar-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--dim); }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
+  .empty { color: var(--dim); padding: 16px 2px; font-style: italic; }
+  .error { margin-top: 12px; padding: 10px 12px; border: 1px solid #5a2626; background: #1d1010; color: #ffb0b0; border-radius: 9px; }
+  .error[hidden] { display: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font-size: 11px; color: var(--dim); background: #0b1118; }
+  .role-row { display: grid; grid-template-columns: 92px 1fr 64px; gap: 9px; align-items: center; font-size: 12px; }
+  .role-track { height: 8px; background: #0b1118; border-radius: 99px; overflow: hidden; border: 1px solid #1a2530; }
+  .role-fill { height: 100%; background: linear-gradient(90deg, #6b4bd6, #b58cff); }
+  .top-list { display: flex; flex-direction: column; gap: 6px; }
+  .top-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 9px; background: #0c1219; border: 1px solid #1b2732; border-radius: 8px; font-size: 12px; }
+
+  .graph-layout { grid-template-columns: 280px 1fr; align-items: start; }
+  @media (max-width: 820px) { .graph-layout { grid-template-columns: 1fr; } }
+  .graph-list { display: flex; flex-direction: column; gap: 6px; max-height: 430px; overflow: auto; padding-right: 2px; }
+  .graph-item {
+    background: #0c1219; border: 1px solid #1b2732; border-radius: 8px;
+    padding: 8px 10px; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .graph-item:hover { background: #121b25; border-color: #2b4355; }
+  .graph-item.active { border-color: #356078; background: #12212c; }
+  .graph-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .graph-item .sub { color: var(--dim); font-size: 11px; margin-top: 2px; }
+  .graph-item .net { font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">WD</div>
+      <div>
+        <h1>Cash Dashboard</h1>
+        <p class="subtitle">Wardogs · local history · no OCR</p>
+      </div>
+    </div>
+    <div class="status">
+      <button id="new-season" class="danger" type="button">New Season</button>
+      <span id="live-pill" class="pill">IDLE</span>
+      <span id="updated">waiting for data</span>
+    </div>
+  </header>
+
+  <div class="season-bar">
+    <span class="season-label">Season</span>
+    <div id="season-tabs" class="season-tabs"></div>
+  </div>
+  <div id="season-banner" class="banner" hidden></div>
+
+  <nav class="tabs">
+    <button data-tab="live" class="active">Live</button>
+    <button data-tab="overview">Overview</button>
+    <button data-tab="graph">Graph</button>
+    <button data-tab="matches">Matches</button>
+    <button data-tab="insights">Insights</button>
+  </nav>
+
+  <div id="error" class="error" hidden></div>
+
+  <main>
+    <section id="tab-live">
+      <div id="live-cards" class="grid">
+        <div id="gold-slot"></div>
+        <div id="live-cards-body"></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="detail-head">
+          <h2>Live graph <span class="badge active" id="live-graph-badge" hidden>LIVE</span></h2>
+          <span id="live-graph-note" class="muted small"></span>
+        </div>
+        <div id="live-graph-meta" class="muted small"></div>
+        <div id="live-graph-chart" style="margin-top:10px"></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div class="panel">
+          <h2>Recent cash events <span class="muted" id="events-note"></span></h2>
+          <div id="recent-events" class="events"></div>
+        </div>
+        <div class="panel">
+          <h2>Session at a glance</h2>
+          <div id="live-session" class="grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-overview" hidden>
+      <div id="lifetime-cards" class="grid"></div>
+      <div class="panel">
+        <h2>Recent sessions</h2>
+        <div id="sessions-table"></div>
+      </div>
+      <div class="panel">
+        <h2>Recent matches</h2>
+        <div id="overview-matches"></div>
+      </div>
+    </section>
+
+    <section id="tab-graph" hidden>
+      <div class="split graph-layout">
+        <div>
+          <div class="panel" style="margin-top:0">
+            <h2>Sessions</h2>
+            <div id="graph-sessions" class="graph-list"></div>
+          </div>
+          <div class="panel">
+            <h2>Matches in session</h2>
+            <div id="graph-matches" class="graph-list"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:0">
+          <div class="detail-head">
+            <h2 id="graph-title">Net over time</h2>
+            <button class="ghost" id="graph-back" hidden>← session</button>
+          </div>
+          <div id="graph-meta" class="muted small"></div>
+          <div id="graph-chart" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-matches" hidden>
+      <div class="panel">
+        <div class="filters">
+          <input id="filter-q" type="search" placeholder="Search id, faction, map…">
+          <select id="filter-faction"><option value="">All factions</option></select>
+          <select id="filter-result">
+            <option value="">All results</option>
+            <option value="profit">Profit</option>
+            <option value="loss">Loss</option>
+            <option value="even">Even</option>
+          </select>
+          <select id="filter-map"><option value="">All maps</option></select>
+          <select id="filter-since">
+            <option value="">All time</option>
+            <option value="1">Last 24h</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
+          <button id="filter-apply" class="act">Apply</button>
+          <button id="filter-reset" class="ghost">Reset</button>
+          <button id="filter-export" class="act">Export CSV</button>
+          <span id="match-count" class="muted small"></span>
+        </div>
+        <div id="matches-table"></div>
+        <div id="match-detail" class="detail"></div>
+      </div>
+    </section>
+
+    <section id="tab-insights" hidden>
+      <div id="insight-cards" class="grid"></div>
+      <div class="split" style="margin-top:14px">
+        <div class="panel">
+          <h2>Profit by faction</h2>
+          <div id="per-faction"></div>
+        </div>
+        <div class="panel">
+          <h2>Profit by map</h2>
+          <div id="per-map"></div>
+        </div>
+      </div>
+      <div class="split" style="margin-top:14px">
+        <div class="panel">
+          <h2>By hour of day</h2>
+          <div id="per-hour"></div>
+        </div>
+        <div class="panel">
+          <h2>Match length</h2>
+          <div id="length-buckets"></div>
+        </div>
+      </div>
+      <div class="split" style="margin-top:14px">
+        <div class="panel">
+          <h2>Role XP earned</h2>
+          <div id="role-xp"></div>
+        </div>
+        <div class="panel">
+          <h2>Best and worst</h2>
+          <div id="best-worst"></div>
+        </div>
+      </div>
+      <div class="split" style="margin-top:14px">
+        <div class="panel">
+          <h2>Top gains</h2>
+          <div id="top-gains" class="top-list"></div>
+        </div>
+        <div class="panel">
+          <h2>Top spends</h2>
+          <div id="top-spends" class="top-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="season-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="season-modal-title">
+    <h2 id="season-modal-title">Start a new season?</h2>
+    <p>This ends the current match/session, archives the current live data, and resets the dashboard to zero.</p>
+    <p>Name the data being archived before you confirm. For example: <code>2</code> or <code>Season 2</code>.</p>
+    <p>The files move to <code id="season-path">data/seasons/…</code>. Archived seasons stay available in the season tabs and are read-only.</p>
+    <label for="season-name">Archive name</label>
+    <input id="season-name" maxlength="40" autocomplete="off" placeholder="2">
+    <div id="season-modal-error" class="error" hidden></div>
+    <div class="actions">
+      <button id="season-cancel" class="ghost" type="button">Cancel</button>
+      <button id="season-create" class="danger" type="button" disabled>Create</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" hidden></div>
+<div id="gold-pop" class="gold-pop" hidden></div>
+
+<script>
+const app = {
+  state: null,
+  insights: null,
+  matches: [],
+  activeTab: "live",
+  selected: null,
+  season: null,
+  seasons: { current: null, seasons: [] },
+  canArchive: false,
+  seasonBusy: false,
+  graph: { sessions: [], session: null, match: null, selectedSession: null, seq: 0, pending: 0 },
+  liveGraph: { id: null, seq: 0, live: false },
+  gold: null,
+};
+const $ = (sel) => document.querySelector(sel);
+let goldPopCard = null;
+let goldPin = false;
+let goldBusy = false;
+
+function esc(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+function money(value, signed = true) {
+  if (value === null || value === undefined || value === "") return "--";
+  const n = Number(value) || 0;
+  if (!signed) return "$" + Math.abs(n).toLocaleString();
+  if (n > 0) return "+$" + n.toLocaleString();
+  if (n < 0) return "-$" + Math.abs(n).toLocaleString();
+  return "$0";
+}
+function duration(seconds) {
+  let s = Math.max(0, Number(seconds) || 0);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m ${String(sec).padStart(2, "0")}s`;
+}
+function when(iso) {
+  if (!iso) return "--";
+  const d = new Date(iso);
+  return isNaN(d) ? esc(iso) : d.toLocaleString([], { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+function clock(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return isNaN(d) ? esc(iso) : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+function clsFor(value) {
+  const n = Number(value) || 0;
+  return n > 0 ? "pos" : n < 0 ? "neg" : "zero";
+}
+function card(label, value, sub = "", cls = "") {
+  return `<div class="card"><div class="label">${esc(label)}</div><div class="value ${cls}">${value}</div><div class="sub">${esc(sub)}</div></div>`;
+}
+function flags(match) {
+  const out = [];
+  if (match.active) out.push('<span class="badge active">LIVE</span>');
+  if (match.partial) out.push('<span class="badge partial">PARTIAL</span>');
+  if (match.resumed) out.push('<span class="badge resumed">RESUMED</span>');
+  if (match.interrupted) out.push('<span class="badge interrupted">INTERRUPTED</span>');
+  return out.join("");
+}
+function showError(err) {
+  const node = $("#error");
+  node.textContent = err ? String(err.message || err) : "";
+  node.hidden = !err;
+}
+async function api(path) {
+  const response = await fetch(withSeason(path), { cache: "no-store" });
+  if (!response.ok) throw new Error(`${path} → HTTP ${response.status}`);
+  return response.json();
+}
+function withSeason(path) {
+  if (!app.season) return path;
+  if (path.startsWith("/api/seasons") || path.startsWith("/api/new-season")) return path;
+  return path + (path.includes("?") ? "&" : "?") + "season=" + encodeURIComponent(app.season);
+}
+let toastTimer = null;
+function showToast(message) {
+  const node = $("#toast");
+  node.textContent = message;
+  node.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { node.hidden = true; }, 4000);
+}
+
+// --------------------------------------------------------------- seasons
+async function loadSeasons() {
+  try {
+    app.seasons = await api("/api/seasons");
+    app.canArchive = app.seasons.can_archive !== false;
+    $("#new-season").hidden = !app.canArchive;
+  } catch (err) {
+    // Older tracker builds do not have the seasons API.  Keep the dashboard
+    // usable and hide the button until the tracker is restarted.
+    app.seasons = {
+      current: { id: null, name: "Current", current: true },
+      seasons: [],
+    };
+    app.canArchive = false;
+    $("#new-season").hidden = true;
+  }
+  renderSeasonTabs();
+}
+function renderSeasonTabs() {
+  const current = app.seasons.current || { id: null, name: "Current", current: true };
+  const archives = app.seasons.seasons || [];
+  $("#season-tabs").innerHTML = [current, ...archives].map((season) => {
+    const id = season.current ? "" : season.id;
+    const active = (app.season || "") === id;
+    return `<button type="button" data-season="${esc(id)}" class="${active ? "active" : ""}">${esc(season.name)}</button>`;
+  }).join("");
+  document.querySelectorAll("#season-tabs [data-season]").forEach((button) => {
+    button.addEventListener("click", () => selectSeason(button.dataset.season || null));
+  });
+}
+async function selectSeason(id) {
+  app.season = id || null;
+  const address = new URL(window.location.href);
+  if (app.season) address.searchParams.set("season", app.season);
+  else address.searchParams.delete("season");
+  window.history.replaceState(null, "", address);
+  app.state = null;
+  app.insights = null;
+  app.matches = [];
+  app.selected = null;
+  app.graph = { sessions: [], session: null, match: null, selectedSession: null, seq: app.graph.seq + 1, pending: 0 };
+  app.liveGraph = { id: null, seq: app.liveGraph.seq + 1, live: false };
+
+  const liveButton = document.querySelector('nav.tabs button[data-tab="live"]');
+  const banner = $("#season-banner");
+  if (app.season) {
+    const season = (app.seasons.seasons || []).find((item) => item.id === app.season);
+    banner.textContent = `Viewing archived season "${season ? season.name : app.season}" — read-only.`;
+    banner.hidden = false;
+    if (liveButton) liveButton.hidden = true;
+    if (app.activeTab === "live") showTab("overview");
+  } else {
+    banner.hidden = true;
+    if (liveButton) liveButton.hidden = false;
+    if (app.activeTab === "live") showTab("live");
+  }
+  renderSeasonTabs();
+  try {
+    await loadState();
+    await loadInsights();
+    if (app.activeTab === "matches") await loadMatches();
+    if (app.activeTab === "graph") await loadGraph();
+  } catch (err) {
+    showError(err);
+  }
+}
+
+// ------------------------------------------------------------------ tabs
+function showTab(name, options = {}) {
+  if (name === "live" && app.season) name = "overview";
+  app.activeTab = name;
+  document.querySelectorAll("nav.tabs button").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === name);
+  });
+  document.querySelectorAll("main > section").forEach((section) => {
+    section.hidden = section.id !== `tab-${name}`;
+  });
+  if (name === "live" && app.state) refreshLiveGraph(app.state).catch(showError);
+  if (name === "graph") {
+    if (options.sessionId && !app.graph.sessions.length) loadGraph(options.sessionId).catch(showError);
+    else if (options.sessionId) selectGraphSession(options.sessionId).catch(showError);
+    else if (!app.graph.sessions.length) loadGraph().catch(showError);
+  }
+  if (name === "matches") {
+    if (!app.insights) loadInsights().catch(showError);
+    loadMatches().catch(showError);
+  }
+  if (name === "insights") loadInsights().catch(showError);
+}
+document.querySelectorAll("nav.tabs button").forEach((btn) => {
+  btn.addEventListener("click", () => showTab(btn.dataset.tab));
+});
+
+// ---------------------------------------------------------------- live
+function renderLive(state) {
+  app.state = state;
+  const session = state.active_session || state.last_session || {};
+  const match = state.active_match || state.last_match || null;
+  const live = Boolean(state.active_match);
+  const pill = $("#live-pill");
+  if (app.season) {
+    pill.textContent = "ARCHIVED";
+    pill.className = "pill idle";
+  } else {
+    pill.textContent = live ? "LIVE MATCH" : state.active_session ? "IN SESSION" : "IDLE";
+    pill.className = "pill " + (live ? "live" : state.active_session ? "idle" : "");
+  }
+  $("#updated").textContent = state.updated_at ? `updated ${clock(state.updated_at)}` : "waiting for data";
+
+  const seasonNet = Number(session.balance) || 0;
+  const matchNet = match ? Number(match.balance) || 0 : 0;
+  const matchRate = match ? match.cash_per_hour : null;
+  const liveCards = [
+    card("Season net", money(seasonNet), `${Number(session.matches) || 0} matches`, clsFor(seasonNet)),
+    card("Match net", match ? money(matchNet) : "--", live ? "in progress" : match ? "last match" : "waiting for a match", clsFor(matchNet)),
+    card("Spent", money(match ? match.spent : session.spent, false), match ? "this match" : "this season", ""),
+    card("Gained", money(match ? match.gained : session.gained, false), match ? "this match" : "this season", ""),
+    card("Cash / hour", matchRate == null ? "--" : money(matchRate), match ? "match pace" : "no sample", clsFor(matchRate)),
+    card("Map", match && match.map ? esc(match.map) : "--", match ? `${match.lives == null ? "--" : match.lives} lives` : "not available", ""),
+  ].join("");
+  const grid = $("#live-cards-body");
+  if (grid.innerHTML !== liveCards) {
+    grid.innerHTML = liveCards;
+  }
+
+  const sessionCards = [
+    card("Season net", money(seasonNet), session.id || "not started", clsFor(seasonNet)),
+    card("Season spent", money(session.spent, false), "", ""),
+    card("Season gained", money(session.gained, false), "", ""),
+    card("Matches", String(Number(session.matches) || 0), "", ""),
+  ];
+  $("#live-session").innerHTML = sessionCards.join("");
+
+  const events = state.recent_events || [];
+  $("#events-note").textContent = events.length ? `${events.length} newest` : "";
+  if (!events.length) {
+    $("#recent-events").innerHTML = '<div class="empty">No cash events yet. Start a match and the tracker will fill this in.</div>';
+  } else {
+    $("#recent-events").innerHTML = events.slice().reverse().map((event) => {
+      const amount = event.event === "spent" || event.event === "gained" ? money(event.amount) : "--";
+      const kind = event.event.replaceAll("_", " ");
+      return `<div class="event">
+        <div class="kind">${esc(clock(event.time_utc))}</div>
+        <div><span class="kind">${esc(kind)}</span> <span class="amt">${amount}</span></div>
+        <div class="bal">${money(event.match_balance)}</div>
+      </div>`;
+    }).join("");
+  }
+  if (app.activeTab === "live") refreshLiveGraph(state).catch(showError);
+  renderOverview(state);
+}
+
+// ------------------------------------------------------------------ gold
+function ordinal(n) {
+  const value = Math.round(Number(n) || 0);
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return value + "th";
+  return value + ({ 1: "st", 2: "nd", 3: "rd" }[value % 10] || "th");
+}
+function moneyShort(value) {
+  const n = Number(value) || 0;
+  if (Math.abs(n) >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
+  if (Math.abs(n) >= 1e3) return "$" + Math.round(n / 1e3) + "k";
+  return "$" + Math.round(n);
+}
+function starsHtml(count) {
+  const n = Math.max(0, Math.min(3, Math.round(Number(count) || 0)));
+  if (!n) return "";
+  return `<span class="on">${"★".repeat(n)}</span>`;
+}
+function goldAge(gold) {
+  if (!gold || !gold.updated_at) return "";
+  const age = Date.now() - Date.parse(gold.updated_at);
+  if (!Number.isFinite(age) || age < 0) return "";
+  const minutes = Math.round(age / 60000);
+  if (minutes < 1) return "updated just now";
+  if (minutes < 60) return `updated ${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `updated ${hours}h ago`;
+  return `updated ${Math.round(hours / 24)}d ago`;
+}
+function goldCardInner(gold) {
+  if (!gold || gold.price == null) {
+    const note = gold && gold.offline ? "offline · no cached price" : "loading market…";
+    return `<div class="label">Gold bar</div><div class="value muted">--</div>
+      <div class="sub">${esc(note)}</div>`;
+  }
+  const bits = [`3-mo low ${money(gold.low90, false)}`, `${ordinal(gold.percentile)} pct`];
+  if (gold.offline) bits.push("offline");
+  return `<div class="label">Gold bar ${gold.record ? '<span class="badge active">ALL-TIME LOW</span>' : ""}</div>
+    <div class="value">${money(gold.price, false)}</div>
+    <div class="stars">${starsHtml(gold.stars)}<span class="rec">${esc(gold.zone_label || "")}</span></div>
+    <div class="sub">${esc(bits.join(" · "))}</div>`;
+}
+function goldCardHtml() {
+  const gold = app.gold;
+  const zone = gold && gold.price != null ? (gold.zone || "fair") : "";
+  return `<div class="card gold-card ${zone}" tabindex="0" role="button" title="Hover for the last 90 days">${goldCardInner(gold)}</div>`;
+}
+function goldChartSvg(gold) {
+  const points = (gold.history || [])
+    .map(([day, price]) => ({ day, t: Date.parse(day + "T00:00:00Z"), v: Number(price) || 0 }))
+    .filter((point) => Number.isFinite(point.t) && point.v > 0);
+  if (points.length < 2) return '<div class="empty">Not enough history yet.</div>';
+  const width = 532, height = 200, padL = 52, padR = 12, padT = 12, padB = 24;
+  const minT = points[0].t;
+  const maxT = points[points.length - 1].t;
+  const values = points.map((point) => point.v);
+  const lo = Math.min(...values, Number(gold.buy_at) || values[0]) * 0.92;
+  const hi = Math.max(...values, Number(gold.median90) || 0) * 1.04;
+  const x = (t) => padL + ((t - minT) / (maxT - minT)) * (width - padL - padR);
+  const y = (v) => height - padB - (Math.log(v / lo) / Math.log(hi / lo)) * (height - padT - padB);
+  const line = points.map((point) => `${x(point.t).toFixed(1)},${y(point.v).toFixed(1)}`).join(" ");
+  const area = `${x(minT).toFixed(1)},${(height - padB).toFixed(1)} ${line} ${x(maxT).toFixed(1)},${(height - padB).toFixed(1)}`;
+  const hline = (value, cls) => {
+    if (!Number.isFinite(Number(value))) return "";
+    const yy = y(Number(value)).toFixed(1);
+    return `<line class="${cls}" x1="${padL}" y1="${yy}" x2="${width - padR}" y2="${yy}"></line>`;
+  };
+  const last = points[points.length - 1];
+  const span = maxT - minT;
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthLines = points.slice(1).map((point, index) => {
+    const previous = points[index];
+    if (!point.day || !previous.day) return "";
+    if (point.day.slice(0, 7) === previous.day.slice(0, 7)) return "";
+    const mx = x(point.t).toFixed(1);
+    const name = months[Number(point.day.slice(5, 7)) - 1] || "";
+    return `<line class="monthline" x1="${mx}" y1="${padT}" x2="${mx}" y2="${height - padB}"></line>
+      <text class="axis" x="${mx}" y="${padT + 10}">${name}</text>`;
+  }).join("");
+  return `<svg class="chart gold-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+    ${hline(gold.low90, "lowline")}
+    ${hline(gold.buy_at, "buyline")}
+    ${hline(gold.median90, "medline")}
+    <polygon class="area" points="${area}"></polygon>
+    <polyline class="line" points="${line}"></polyline>
+    ${monthLines}
+    <circle class="dot" cx="${x(last.t).toFixed(1)}" cy="${y(last.v).toFixed(1)}" r="3.5"></circle>
+    <text class="axis" x="4" y="${(padT + 4).toFixed(1)}">${moneyShort(hi)}</text>
+    <text class="axis" x="4" y="${(height - padB).toFixed(1)}">${moneyShort(lo)}</text>
+    <text class="axis" x="${width - padR}" y="${(padT + 4).toFixed(1)}" text-anchor="end">log</text>
+    <text class="axis" x="${padL}" y="${height - 7}">${esc(chartLabel(minT, span))}</text>
+    <text class="axis" x="${width - padR}" y="${height - 7}" text-anchor="end">${esc(chartLabel(maxT, span))}</text>
+  </svg>`;
+}
+function goldPopHtml(gold) {
+  if (!gold || gold.price == null) {
+    const note = gold && gold.error ? gold.error : "No price yet.";
+    return `<div class="gp-title">Gold bar</div><div class="empty">${esc(note)}</div>`;
+  }
+  const zone = gold.zone || "fair";
+  const stars = Math.max(0, Math.min(3, Number(gold.stars) || 0));
+  const starNote = stars ? ` · ${stars} of 3 stars` : "";
+  return `<div class="gp-head">
+    <div>
+      <div class="gp-title">Gold bar · last 90 days</div>
+      <div class="gp-sub">${esc(gold.zone_label || "")}${starNote} · ${ordinal(gold.percentile)} percentile</div>
+    </div>
+    <div style="text-align:right">
+      <div class="gp-price ${zone}">${money(gold.price, false)}</div>
+      ${stars ? `<div class="gp-stars">${starsHtml(stars)}</div>` : ""}
+    </div>
+  </div>
+  ${goldChartSvg(gold)}
+  <div class="gp-legend">
+    <span><span class="sw"></span>3-mo low</span>
+    <span><span class="sw buy"></span>green line (2× low)</span>
+    <span><span class="sw med"></span>90-day median</span>
+  </div>
+  <div class="gp-foot">
+    <span>90d low ${money(gold.low90, false)}${gold.low90_date ? " (" + esc(gold.low90_date) + ")" : ""} · all-time low ${money(gold.all_time_low, false)}</span>
+    <span>${gold.offline ? '<span class="off">offline · cached reading</span>' : "MetaForge · " + esc(goldAge(gold))}</span>
+  </div>`;
+}
+function positionGoldPop() {
+  const pop = $("#gold-pop");
+  if (!pop || pop.hidden || !goldPopCard) return;
+  const rect = goldPopCard.getBoundingClientRect();
+  const width = pop.offsetWidth || 560;
+  const height = pop.offsetHeight || 320;
+  const maxLeft = Math.max(8, window.innerWidth - width - 8);
+  pop.style.left = Math.min(Math.max(8, rect.left), maxLeft) + "px";
+  let top = rect.bottom + 8;
+  if (top + height > window.innerHeight - 8) top = Math.max(8, rect.top - height - 8);
+  pop.style.top = top + "px";
+}
+function showGoldPop(card) {
+  if (!app.gold) return;
+  const pop = $("#gold-pop");
+  pop.innerHTML = goldPopHtml(app.gold);
+  pop.hidden = false;
+  pop.style.left = "-9999px";
+  pop.style.top = "0px";
+  goldPopCard = card;
+  positionGoldPop();
+}
+function hideGoldPop() {
+  const pop = $("#gold-pop");
+  if (pop) pop.hidden = true;
+  goldPopCard = null;
+  goldPin = false;
+}
+function updateGoldCard() {
+  const slot = $("#gold-slot");
+  if (!slot) return;
+  const gold = app.gold;
+  let node = slot.querySelector(".gold-card");
+  if (!node) {
+    slot.innerHTML = goldCardHtml();
+    node = slot.querySelector(".gold-card");
+  }
+  if (!node) return;
+  node.className = "card gold-card " + (gold && gold.price != null ? (gold.zone || "fair") : "");
+  node.innerHTML = goldCardInner(gold);
+}
+async function loadGold() {
+  if (goldBusy) return;
+  goldBusy = true;
+  try {
+    app.gold = await api("/api/gold");
+  } catch (err) {
+    app.gold = { ok: false, offline: true, price: null, error: String(err.message || err) };
+  } finally {
+    goldBusy = false;
+  }
+  updateGoldCard();
+  if (goldPopCard) showGoldPop(goldPopCard);
+}
+$("#live-cards").addEventListener("mouseover", (event) => {
+  const card = event.target.closest(".gold-card");
+  if (!card || card.contains(event.relatedTarget)) return;
+  showGoldPop(card);
+});
+$("#live-cards").addEventListener("mouseout", (event) => {
+  const card = event.target.closest(".gold-card");
+  if (!card || card.contains(event.relatedTarget)) return;
+  if (!goldPin) hideGoldPop();
+});
+$("#live-cards").addEventListener("focusin", (event) => {
+  const card = event.target.closest(".gold-card");
+  if (card) showGoldPop(card);
+});
+$("#live-cards").addEventListener("focusout", (event) => {
+  const card = event.target.closest(".gold-card");
+  if (card && !goldPin) hideGoldPop();
+});
+$("#live-cards").addEventListener("click", (event) => {
+  const card = event.target.closest(".gold-card");
+  if (!card) return;
+  if (goldPin && goldPopCard === card) {
+    hideGoldPop();
+    return;
+  }
+  goldPin = true;
+  showGoldPop(card);
+});
+document.addEventListener("click", (event) => {
+  if (!goldPin) return;
+  if (event.target.closest("#gold-pop") || event.target.closest(".gold-card")) return;
+  hideGoldPop();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") hideGoldPop();
+});
+window.addEventListener("resize", positionGoldPop);
+window.addEventListener("scroll", () => {
+  if (goldPopCard) positionGoldPop();
+}, { passive: true });
+
+async function refreshLiveGraph(state) {
+  const seq = ++app.liveGraph.seq;
+  const session = state.active_session || state.last_session;
+  const id = session && session.id;
+  const chart = $("#live-graph-chart");
+  const badge = $("#live-graph-badge");
+  if (!id) {
+    app.liveGraph.id = null;
+    app.liveGraph.live = false;
+    badge.hidden = true;
+    $("#live-graph-note").textContent = "";
+    $("#live-graph-meta").textContent = "Start a session to see the graph.";
+    chart.innerHTML = '<div class="empty">No session yet.</div>';
+    return;
+  }
+  const live = Boolean(state.active_session);
+  if (!live && app.liveGraph.id === id && !app.liveGraph.live && chart.innerHTML) return;
+  const detail = await api("/api/session/" + encodeURIComponent(id));
+  if (seq !== app.liveGraph.seq) return;
+  app.liveGraph.id = id;
+  app.liveGraph.live = live;
+  badge.hidden = !live;
+  $("#live-graph-note").textContent = live ? "updates every 2s" : "last completed session";
+  const count = (detail.matches || []).length;
+  $("#live-graph-meta").textContent = `${money(detail.net)} net · ${count} matches · ${duration(detail.duration_s)} · down = spent, up = gained`;
+  chart.innerHTML = renderTimeChart(detail.curve);
+  const errorNode = $("#error");
+  if (!errorNode.hidden && errorNode.textContent.includes("/api/session/")) showError(null);
+}
+
+function renderOverview(state) {
+  const lifetime = state.lifetime || {};
+  $("#lifetime-cards").innerHTML = [
+    card(app.season ? "Season net" : "Lifetime net", money(lifetime.balance), `${Number(lifetime.matches) || 0} matches · ${Number(lifetime.sessions) || 0} sessions${app.season ? " · archived" : ""}`, clsFor(lifetime.balance)),
+    card("Spent", money(lifetime.spent, false), app.season ? "archived season" : "lifetime", ""),
+    card("Gained", money(lifetime.gained, false), app.season ? "archived season" : "lifetime", ""),
+    card("Avg / match", Number(lifetime.matches) ? money(Math.round((Number(lifetime.balance) || 0) / Number(lifetime.matches))) : "--", "", ""),
+  ].join("");
+
+  const sessions = (state.recent_sessions || []).slice();
+  if (state.active_session) sessions.unshift(state.active_session);
+  if (!sessions.length) {
+    $("#sessions-table").innerHTML = '<div class="empty">No sessions recorded yet.</div>';
+  } else {
+    $("#sessions-table").innerHTML = `<table><thead><tr>
+      <th>Started</th><th>Ended</th><th class="num">Net</th><th class="num">Spent</th><th class="num">Gained</th><th class="num">Matches</th><th>Status</th>
+    </tr></thead><tbody>${sessions.map((s) => {
+      const net = Number(s.balance) || 0;
+      const start = new Date(s.started_at);
+      const end = s.ended_at ? new Date(s.ended_at) : new Date();
+      const secs = (!isNaN(start) && !isNaN(end)) ? Math.max(0, (end - start) / 1000) : 0;
+      return `<tr class="clickable" data-session-id="${esc(s.id || "")}">
+        <td>${when(s.started_at)}</td>
+        <td>${s.ended_at ? when(s.ended_at) : '<span class="pos">live</span>'}</td>
+        <td class="num ${clsFor(net)}">${money(net)}</td>
+        <td class="num">${money(s.spent, false)}</td>
+        <td class="num">${money(s.gained, false)}</td>
+        <td class="num">${Number(s.matches) || 0}</td>
+        <td>${duration(secs)}${s.interrupted ? '<span class="badge interrupted">INTERRUPTED</span>' : ""}</td>
+      </tr>`;
+    }).join("")}</tbody></table>`;
+    bindSessionRows();
+  }
+
+  const matches = (state.recent_matches || []).slice(0, 8);
+  $("#overview-matches").innerHTML = matches.length ? matchesTable(matches, false) : '<div class="empty">No matches recorded yet.</div>';
+}
+
+// -------------------------------------------------------------- matches
+function matchesTable(matches, clickable = true) {
+  if (!matches.length) return '<div class="empty">No matches match these filters.</div>';
+  return `<table><thead><tr>
+    <th>When</th><th>Faction</th><th>Map</th><th class="num">Net</th><th class="num">Spent</th><th class="num">Gained</th><th class="num">Duration</th><th class="num">Cash/h</th><th class="num">Lives</th><th>Flags</th>
+  </tr></thead><tbody>${matches.map((m) => `<tr ${clickable ? `class="clickable" data-uid="${esc(m.id)}"` : ""}>
+    <td>${when(m.started_at)}</td>
+    <td>${esc(m.faction || "?")}</td>
+    <td>${esc(m.map || "Unknown")}</td>
+    <td class="num ${clsFor(m.net)}">${money(m.net)}</td>
+    <td class="num">${money(m.spent, false)}</td>
+    <td class="num">${money(m.gained, false)}</td>
+    <td class="num">${duration(m.duration_s)}</td>
+    <td class="num">${m.cash_per_hour == null ? "--" : money(m.cash_per_hour)}</td>
+    <td class="num">${m.lives == null ? "--" : m.lives}</td>
+    <td>${flags(m)}</td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function bindMatchRows() {
+  document.querySelectorAll("tr[data-uid]").forEach((row) => {
+    row.addEventListener("click", () => loadMatch(row.dataset.uid).catch(showError));
+  });
+}
+async function loadMatches() {
+  const season = app.season;
+  const params = filterParams();
+  const matches = await api("/api/matches?" + params.toString());
+  if (season !== app.season) return;
+  app.matches = matches;
+  $("#match-count").textContent = `${matches.length} match${matches.length === 1 ? "" : "es"}`;
+  $("#matches-table").innerHTML = matchesTable(matches);
+  bindMatchRows();
+}
+function filterParams() {
+  const params = new URLSearchParams();
+  const q = $("#filter-q").value.trim();
+  const faction = $("#filter-faction").value;
+  const result = $("#filter-result").value;
+  const map = $("#filter-map").value;
+  const since = $("#filter-since").value;
+  if (q) params.set("q", q);
+  if (faction) params.set("faction", faction);
+  if (result) params.set("result", result);
+  if (map) params.set("map", map);
+  if (since) params.set("since", since);
+  return params;
+}
+$("#filter-apply").addEventListener("click", () => loadMatches().catch(showError));
+$("#filter-export").addEventListener("click", () => {
+  window.location = withSeason("/api/export.csv?" + filterParams().toString());
+});
+$("#filter-reset").addEventListener("click", () => {
+  $("#filter-q").value = "";
+  $("#filter-faction").value = "";
+  $("#filter-result").value = "";
+  $("#filter-map").value = "";
+  $("#filter-since").value = "";
+  loadMatches().catch(showError);
+});
+$("#filter-q").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") loadMatches().catch(showError);
+});
+
+function chartLabel(ms, span) {
+  const date = new Date(ms);
+  if (isNaN(date)) return "";
+  return span > 86400000
+    ? date.toLocaleDateString([], { month: "short", day: "2-digit" })
+    : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+function renderTimeChart(curve) {
+  const points = (curve || [])
+    .map((point) => ({ t: Date.parse(point.time), v: Number(point.balance) || 0 }))
+    .filter((point) => Number.isFinite(point.t));
+  if (points.length === 1) {
+    points.push({ t: Math.max(Date.now(), points[0].t + 1), v: points[0].v });
+  }
+  if (points.length < 2) return '<div class="empty">Not enough data yet.</div>';
+  const width = 860, height = 260, padL = 58, padR = 18, padT = 18, padB = 30;
+  let minT = Math.min(...points.map((p) => p.t));
+  let maxT = Math.max(...points.map((p) => p.t));
+  if (minT === maxT) { minT -= 60000; maxT += 60000; }
+  const values = points.map((p) => p.v);
+  let minV = Math.min(0, ...values);
+  let maxV = Math.max(0, ...values);
+  if (minV === maxV) maxV = minV + 1;
+  const x = (t) => padL + ((t - minT) / (maxT - minT)) * (width - padL - padR);
+  const y = (v) => height - padB - ((v - minV) / (maxV - minV)) * (height - padT - padB);
+  const line = points.map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+  const zero = y(0).toFixed(1);
+  const firstX = x(points[0].t).toFixed(1);
+  const lastX = x(points[points.length - 1].t).toFixed(1);
+  const last = points[points.length - 1];
+  const area = `${firstX},${zero} ${line} ${lastX},${zero}`;
+  const grid = [0.25, 0.5, 0.75].map((fraction) => {
+    const yy = (padT + fraction * (height - padT - padB)).toFixed(1);
+    return `<line class="grid" x1="${padL}" y1="${yy}" x2="${width - padR}" y2="${yy}"></line>`;
+  }).join("");
+  const span = maxT - minT;
+  return `<svg class="chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+    ${grid}
+    <line class="zero" x1="${padL}" y1="${zero}" x2="${width - padR}" y2="${zero}"></line>
+    <polygon class="area" points="${area}"></polygon>
+    <polyline class="line" points="${line}"></polyline>
+    <circle class="dot" cx="${x(last.t).toFixed(1)}" cy="${y(last.v).toFixed(1)}" r="3.5"></circle>
+    <text class="axis" x="6" y="${padT + 4}">${money(maxV)}</text>
+    <text class="axis" x="6" y="${height - padB + 4}">${money(minV)}</text>
+    <text class="axis" x="${padL}" y="${height - 8}">${esc(chartLabel(minT, span))}</text>
+    <text class="axis" x="${width - padR}" y="${height - 8}" text-anchor="end">${esc(chartLabel(maxT, span))}</text>
+  </svg>`;
+}
+function renderCurve(curve) {
+  if (!curve || curve.length < 2) return '<div class="empty">No cash events recorded for this match.</div>';
+  return renderTimeChart(curve);
+}
+async function loadMatch(uid) {
+  const match = await api("/api/match/" + encodeURIComponent(uid));
+  app.selected = match;
+  const events = match.events || [];
+  const roles = Object.entries(match.role_xp || {}).filter(([, xp]) => Number(xp) > 0);
+  const maxRole = Math.max(1, ...roles.map(([, xp]) => Number(xp) || 0));
+  $("#match-detail").innerHTML = `
+    <div class="detail-head">
+      <h2>${esc(match.id)} <span class="muted">${esc(match.map || "Unknown")} · ${esc(match.faction || "?")}</span></h2>
+      <button class="ghost" id="close-detail">close</button>
+    </div>
+    <div class="grid">
+      ${card("Net", money(match.net), duration(match.duration_s), clsFor(match.net))}
+      ${card("Spent", money(match.spent, false), "", "")}
+      ${card("Gained", money(match.gained, false), "", "")}
+      ${card("Cash / hour", match.cash_per_hour == null ? "--" : money(match.cash_per_hour), "", clsFor(match.cash_per_hour))}
+      ${card("Lives", match.lives == null ? "--" : String(match.lives), `${match.spawns == null ? 0 : match.spawns} respawns`, "")}
+      ${card("Started", esc(when(match.started_at)), match.partial ? "partial match" : "full match", "")}
+    </div>
+    <div class="panel">
+      <h2>Money over the match</h2>
+      ${renderCurve(match.curve)}
+    </div>
+    <div class="split">
+      <div class="panel">
+        <h2>Event timeline <span class="muted">${events.length} events</span></h2>
+        ${events.length ? `<table><thead><tr><th>Time</th><th>Event</th><th class="num">Amount</th><th class="num">Match balance</th><th class="num">Season</th></tr></thead><tbody>${events.map((event) => `<tr>
+          <td>${clock(event.time_utc)}</td>
+          <td>${esc(event.event.replaceAll("_", " "))}</td>
+          <td class="num">${event.event === "spent" || event.event === "gained" ? money(event.amount) : "--"}</td>
+          <td class="num">${money(event.match_balance)}</td>
+          <td class="num muted">${money(event.session_balance)}</td>
+        </tr>`).join("")}</tbody></table>` : '<div class="empty">No events recorded.</div>'}
+      </div>
+      <div class="panel">
+        <h2>Role XP</h2>
+        ${roles.length ? roles.map(([role, xp]) => `<div class="role-row">
+          <span>${esc(role)}</span>
+          <span class="role-track"><span class="role-fill" style="display:block;width:${(Number(xp) / maxRole * 100).toFixed(1)}%"></span></span>
+          <span class="bar-val">+${Number(xp).toLocaleString()}</span>
+        </div>`).join("") : '<div class="empty">Role XP not captured for this match.</div>'}
+      </div>
+    </div>`;
+  const close = $("#close-detail");
+  if (close) close.addEventListener("click", () => { $("#match-detail").innerHTML = ""; });
+  $("#match-detail").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ---------------------------------------------------------------- graph
+function bindSessionRows() {
+  document.querySelectorAll("#sessions-table tr[data-session-id]").forEach((row) => {
+    if (!row.dataset.sessionId) return;
+    row.addEventListener("click", () => openGraphSession(row.dataset.sessionId));
+  });
+}
+function openGraphSession(id) {
+  if (!id) return;
+  app.graph.selectedSession = id;
+  showTab("graph", { sessionId: id });
+}
+function renderGraphSessions() {
+  const sessions = app.graph.sessions || [];
+  if (!sessions.length) {
+    $("#graph-sessions").innerHTML = '<div class="empty">No sessions recorded yet.</div>';
+    return;
+  }
+  $("#graph-sessions").innerHTML = sessions.map((session) => {
+    const net = Number(session.net ?? session.balance) || 0;
+    const active = session.active ? '<span class="badge active">LIVE</span>' : "";
+    return `<div class="graph-item ${session.id === app.graph.selectedSession ? "active" : ""}" data-session-id="${esc(session.id)}">
+      <div class="graph-item-top"><strong>${when(session.started_at)}</strong>${active}</div>
+      <div class="sub">${Number(session.matches) || 0} matches · ${duration(session.duration_s)}</div>
+      <div class="net ${clsFor(net)}">${money(net)}</div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("#graph-sessions [data-session-id]").forEach((node) => {
+    node.addEventListener("click", () => selectGraphSession(node.dataset.sessionId).catch(showError));
+  });
+}
+function renderGraphMatches(matches) {
+  const list = matches || [];
+  if (!list.length) {
+    $("#graph-matches").innerHTML = '<div class="empty">No matches in this session.</div>';
+    return;
+  }
+  $("#graph-matches").innerHTML = list.map((match) => {
+    const active = app.graph.match && app.graph.match.id === match.id ? "active" : "";
+    return `<div class="graph-item ${active}" data-match-uid="${esc(match.id)}">
+      <div class="graph-item-top"><strong>${esc(match.map || "Unknown")}</strong><span class="muted">${esc(match.faction || "?")}</span></div>
+      <div class="sub">${when(match.started_at)} · ${duration(match.duration_s)}</div>
+      <div class="net ${clsFor(match.net)}">${money(match.net)}</div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("#graph-matches [data-match-uid]").forEach((node) => {
+    node.addEventListener("click", () => selectGraphMatch(node.dataset.matchUid).catch(showError));
+  });
+}
+async function selectGraphSession(id) {
+  const seq = ++app.graph.seq;
+  app.graph.pending += 1;
+  try {
+    const session = await api("/api/session/" + encodeURIComponent(id));
+    if (seq !== app.graph.seq) return;
+    app.graph.selectedSession = id;
+    app.graph.session = session;
+    app.graph.match = null;
+    renderGraphSessions();
+    renderGraphMatches(session.matches || []);
+    const count = (session.matches || []).length;
+    $("#graph-title").textContent = `Session · ${when(session.started_at)}`;
+    $("#graph-meta").textContent = `${money(session.net)} net · ${count} matches · ${duration(session.duration_s)} · down = spent, up = gained`;
+    $("#graph-chart").innerHTML = renderTimeChart(session.curve);
+    $("#graph-back").hidden = true;
+  } finally {
+    app.graph.pending -= 1;
+  }
+}
+async function selectGraphMatch(uid) {
+  const seq = ++app.graph.seq;
+  app.graph.pending += 1;
+  try {
+    const match = await api("/api/match/" + encodeURIComponent(uid));
+    if (seq !== app.graph.seq) return;
+    app.graph.match = match;
+    renderGraphMatches(app.graph.session ? app.graph.session.matches : []);
+    $("#graph-title").textContent = `Match · ${match.map || "Unknown"} · ${match.faction || "?"}`;
+    $("#graph-meta").textContent = `${money(match.net)} net · ${duration(match.duration_s)} · ${match.cash_per_hour == null ? "--" : money(match.cash_per_hour) + "/h"}`;
+    $("#graph-chart").innerHTML = renderCurve(match.curve);
+    $("#graph-back").hidden = false;
+  } finally {
+    app.graph.pending -= 1;
+  }
+}
+async function loadGraph(preferredSessionId) {
+  const sessions = await api("/api/sessions");
+  app.graph.sessions = sessions;
+  renderGraphSessions();
+  if (!sessions.length) {
+    app.graph.selectedSession = null;
+    app.graph.session = null;
+    app.graph.match = null;
+    $("#graph-title").textContent = "Net over time";
+    $("#graph-meta").textContent = "No sessions recorded yet.";
+    $("#graph-chart").innerHTML = '<div class="empty">Run the tracker and play a match to build history.</div>';
+    $("#graph-matches").innerHTML = "";
+    $("#graph-back").hidden = true;
+    return;
+  }
+  const wanted = preferredSessionId || app.graph.selectedSession;
+  const chosen = sessions.find((session) => session.id === wanted) || sessions[0];
+  await selectGraphSession(chosen.id);
+}
+
+// -------------------------------------------------------------- insights
+function metricTable(groups) {
+  const entries = Object.entries(groups || {});
+  if (!entries.length) return '<div class="empty">No completed matches yet.</div>';
+  return `<table><thead><tr><th>Name</th><th class="num">Matches</th><th class="num">Net</th><th class="num">Avg</th><th class="num">Cash/h</th></tr></thead><tbody>${entries.map(([name, m]) => `<tr>
+    <td>${esc(name)}</td>
+    <td class="num">${Number(m.matches) || 0}</td>
+    <td class="num ${clsFor(m.net)}">${money(m.net)}</td>
+    <td class="num ${clsFor(m.avg_net)}">${money(m.avg_net)}</td>
+    <td class="num">${m.cash_per_hour == null ? "--" : money(m.cash_per_hour)}</td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function barList(entries, valueKey, labelKey, moneyValue = false) {
+  if (!entries.length) return '<div class="empty">No completed matches yet.</div>';
+  const max = Math.max(1, ...entries.map((entry) => Math.abs(Number(entry[valueKey]) || 0)));
+  return `<div class="bars">${entries.map((entry) => {
+    const value = Number(entry[valueKey]) || 0;
+    const width = Math.min(100, Math.abs(value) / max * 100);
+    const label = entry[labelKey];
+    return `<div class="bar-row">
+      <span>${esc(label)}</span>
+      <span class="bar-track"><span class="bar-fill ${value < 0 ? "neg" : ""}" style="display:block;width:${width.toFixed(1)}%"></span></span>
+      <span class="bar-val">${moneyValue ? money(value) : Number(value).toLocaleString()}</span>
+    </div>`;
+  }).join("")}</div>`;
+}
+function renderInsights(insights) {
+  app.insights = insights;
+  const totals = insights.totals || {};
+  const streaks = insights.streaks || {};
+  $("#insight-cards").innerHTML = [
+    card("Matches", String(Number(totals.matches) || 0), `${Number(totals.sessions) || 0} sessions`, ""),
+    card("Net", money(totals.net), `avg ${money(totals.avg_net)} / match`, clsFor(totals.net)),
+    card("Cash / hour", totals.cash_per_hour == null ? "--" : money(totals.cash_per_hour), "completed matches", clsFor(totals.cash_per_hour)),
+    card("Profitable", `${Number(totals.profitable_rate) || 0}%`, `${Number(totals.profitable) || 0} of ${Number(totals.matches) || 0}`, "pos"),
+    card("Current streak", String(Number(streaks.current) || 0), "positive matches", "pos"),
+    card("Best streak", String(Number(streaks.best) || 0), "positive matches", "pos"),
+  ].join("");
+  $("#per-faction").innerHTML = metricTable(insights.per_faction);
+  $("#per-map").innerHTML = metricTable(insights.per_map);
+
+  const hours = Object.entries(insights.per_hour || {}).map(([hour, m]) => ({ label: `${hour}:00`, value: m.net }));
+  $("#per-hour").innerHTML = barList(hours, "value", "label", true);
+  const buckets = (insights.length_buckets || []).map((bucket) => ({ label: bucket.label, value: bucket.matches }));
+  $("#length-buckets").innerHTML = barList(buckets, "value", "label", false);
+
+  const roles = Object.entries(insights.role_xp || {});
+  if (!roles.length) {
+    $("#role-xp").innerHTML = '<div class="empty">No role XP captured yet.</div>';
+  } else {
+    const max = Math.max(1, ...roles.map(([, xp]) => Number(xp) || 0));
+    $("#role-xp").innerHTML = roles.map(([role, xp]) => `<div class="role-row">
+      <span>${esc(role)}</span>
+      <span class="role-track"><span class="role-fill" style="display:block;width:${(Number(xp) / max * 100).toFixed(1)}%"></span></span>
+      <span class="bar-val">+${Number(xp).toLocaleString()}</span>
+    </div>`).join("");
+  }
+
+  const best = insights.best_match, worst = insights.worst_match;
+  $("#best-worst").innerHTML = [
+    best ? card("Best match", money(best.net), `${best.map || "Unknown"} · ${duration(best.duration_s)}`, "pos") : "",
+    worst ? card("Worst match", money(worst.net), `${worst.map || "Unknown"} · ${duration(worst.duration_s)}`, "neg") : "",
+  ].join("") || '<div class="empty">No completed matches yet.</div>';
+
+  const topList = (items, valueKey) => (items || []).length ? items.map((m) => `<div class="top-item">
+    <span>${esc(m.map || "Unknown")} <span class="muted">· ${esc(m.faction || "?")} · ${when(m.started_at)}</span></span>
+    <strong>${money(m[valueKey], false)}</strong>
+  </div>`).join("") : '<div class="empty">No completed matches yet.</div>';
+  $("#top-gains").innerHTML = topList(insights.top_gains, "gained");
+  $("#top-spends").innerHTML = topList(insights.top_spends, "spent");
+
+  populateFacets(insights.facets || {});
+}
+function populateFacets(facets) {
+  const fill = (select, values, placeholder) => {
+    const current = select.value;
+    select.innerHTML = `<option value="">${placeholder}</option>` + (values || []).map((value) => `<option value="${esc(value)}">${esc(value)}</option>`).join("");
+    if (values && values.includes(current)) select.value = current;
+  };
+  fill($("#filter-faction"), facets.factions, "All factions");
+  fill($("#filter-map"), facets.maps, "All maps");
+}
+async function loadInsights() {
+  const season = app.season;
+  const insights = await api("/api/insights");
+  if (season !== app.season) return;
+  renderInsights(insights);
+}
+
+// --------------------------------------------------------------- startup
+async function loadState() {
+  const season = app.season;
+  const state = await api("/api/state");
+  if (season !== app.season) return;
+  renderLive(state);
+}
+
+// ------------------------------------------------------------ new season
+function seasonNameValid(value) {
+  const name = (value || "").trim();
+  if (!name || name.length > 40) return false;
+  if (/[\u0000-\u001f<>:"/\\|?*]/.test(name)) return false;
+  if (/^\.+$/.test(name)) return false;
+  if (name.startsWith(".") || name.endsWith(".")) return false;
+  if (name.toLowerCase() === "current") return false;
+  return true;
+}
+function setSeasonError(message) {
+  const node = $("#season-modal-error");
+  node.textContent = message || "";
+  node.hidden = !message;
+}
+function updateSeasonModal() {
+  const value = $("#season-name").value.trim();
+  const valid = seasonNameValid(value);
+  $("#season-create").disabled = !valid || app.seasonBusy;
+  $("#season-path").textContent = valid ? `data/seasons/${value}` : "data/seasons/…";
+  if (!valid) setSeasonError("");
+}
+function openSeasonModal() {
+  if (app.seasonBusy || !app.canArchive) return;
+  $("#season-modal-title").textContent = app.season
+    ? "Start a new current season?"
+    : "Start a new season?";
+  $("#season-name").value = "";
+  $("#season-create").textContent = "Create";
+  setSeasonError("");
+  updateSeasonModal();
+  $("#season-modal").hidden = false;
+  $("#season-name").focus();
+}
+function closeSeasonModal() {
+  if (app.seasonBusy) return;
+  $("#season-modal").hidden = true;
+}
+async function createSeason() {
+  const name = $("#season-name").value.trim();
+  if (!seasonNameValid(name) || app.seasonBusy) return;
+  app.seasonBusy = true;
+  setSeasonError("");
+  $("#season-create").disabled = true;
+  $("#season-create").textContent = "Archiving…";
+  try {
+    const response = await fetch("/api/new-season", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+    const archived = payload.season || {};
+    $("#season-modal").hidden = true;
+    await loadSeasons();
+    await selectSeason(null);
+    showToast(`Archived as ${archived.name || name}`);
+  } catch (err) {
+    setSeasonError(String(err.message || err));
+  } finally {
+    app.seasonBusy = false;
+    $("#season-create").textContent = "Create";
+    updateSeasonModal();
+  }
+}
+$("#new-season").addEventListener("click", openSeasonModal);
+$("#season-cancel").addEventListener("click", closeSeasonModal);
+$("#season-name").addEventListener("input", updateSeasonModal);
+$("#season-create").addEventListener("click", () => createSeason());
+$("#season-modal").addEventListener("click", (event) => {
+  if (event.target === $("#season-modal")) closeSeasonModal();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeSeasonModal();
+});
+
+async function boot() {
+  try {
+    await loadSeasons();
+    const wanted = new URLSearchParams(window.location.search).get("season");
+    if (wanted) {
+      await selectSeason(wanted);
+    } else {
+      await loadState();
+      await loadInsights();
+      showTab("live");
+      updateGoldCard();
+      loadGold().catch(showError);
+    }
+  } catch (err) {
+    showError(err);
+  }
+}
+setInterval(() => { loadState().catch(showError); }, 2000);
+setInterval(() => { loadGold().catch(showError); }, 60000);
+setInterval(() => {
+  if (app.activeTab === "insights") loadInsights().catch(showError);
+}, 6000);
+setInterval(() => {
+  if (app.activeTab === "graph" && app.graph.session && app.graph.session.active && !app.graph.match && !app.graph.pending) {
+    selectGraphSession(app.graph.selectedSession).catch(showError);
+  }
+}, 6000);
+$("#graph-back").addEventListener("click", () => {
+  if (app.graph.selectedSession) selectGraphSession(app.graph.selectedSession).catch(showError);
+});
+boot();
+</script>
+</body>
+</html>

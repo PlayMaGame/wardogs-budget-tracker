@@ -1,0 +1,40 @@
+# Local game data and personal match history
+data/
+backups/
+perf-backup-*/
+archive/
+wardogs_pad_custom/
+
+# Build/test junk
+__pycache__/
+*.py[cod]
+*.bak
+*.log
+.pytest_cache/
+.venv/
+
+# Local-only files
+null
+Inventory.png
+slot1.png
+
+# Not part of the cash tracker
+keymapper.py
+keytest_visual.py
+keytest_visual.log
+pad_map.json
+slot_tracker.py
+slot1_coords.txt
+start_slot_tracker.bat
+setup.py
+setup.bat
+wd_qol.py
+wd_qol.ahk
+wd_qol.ahk.bak*
+run.bat
+run_mapper.bat
+run_visual.bat
+_fetch_readmes.py
+_scan_strings.py
+backup_original.ino
+inventory_region.json
