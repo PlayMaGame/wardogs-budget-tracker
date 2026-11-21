@@ -9,7 +9,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-tasklist /FI "IMAGENAME eq WardogsClient-Win64-Shipping.exe" 2>nul | find /I "WardogsClient-Win64-Shipping.exe" >nul
+tasklist /FI "IMAGENAME eq WardogsClient-Win64-Shipping.exe" /FO CSV /NH 2>nul | find /I "WardogsClient-Win64-Shipping.exe" >nul
 if errorlevel 1 (
     echo.
     echo WARDOGS is not running.
