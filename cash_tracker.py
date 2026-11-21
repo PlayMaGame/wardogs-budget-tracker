@@ -819,6 +819,7 @@ class Tracker:
         self.session_balance = 0
 
         self.last_match = None
+        self.last_match_chart = None
 
         self.playing_reads = 0
         self.miss_reads = 0
@@ -943,6 +944,37 @@ class Tracker:
             return None
         return match
 
+    def _last_match_chart_payload(self):
+        last = self.display_last_match()
+        if not last:
+            return {"active": False}
+        match_id = last.get("id") or last.get("match_uid")
+        chart = self.last_match_chart
+        if chart and (not match_id or chart.get("match_id") == match_id):
+            payload = dict(chart)
+            payload["active"] = False
+            payload["last"] = True
+            return payload
+        curve = []
+        started = parse_iso(last.get("started_at"))
+        if match_id and started is not None:
+            curve = match_curve_from_events(match_id, started)
+        if not curve:
+            curve = [(0.0, float(last.get("balance") or 0))]
+        ended = parse_iso(last.get("ended_at"))
+        return {
+            "active": False,
+            "last": True,
+            "match_id": match_id,
+            "curve": curve,
+            "duration_s": last.get("duration_s") or 0,
+            "map": display_map_name(last.get("map_raw") or last.get("map")) or "Unknown",
+            "faction": display_faction(last.get("faction")),
+            "partial": bool(last.get("partial")),
+            "net": last.get("balance"),
+            "ended_ts": ended.timestamp() if ended else None,
+        }
+
     def update_overlay(self):
         if self.overlay is None:
             return
@@ -1007,7 +1039,7 @@ class Tracker:
                 "net": self.match_balance,
             }
         else:
-            values["match_chart"] = {"active": False}
+            values["match_chart"] = self._last_match_chart_payload()
         self.overlay.update(**values)
 
     # -------------------------------------------------------------- seasons
@@ -1080,6 +1112,7 @@ class Tracker:
         self.session_balance = 0
 
         self.last_match = None
+        self.last_match_chart = None
         self.playing_reads = 0
         self.miss_reads = 0
         self.saw_menu = False
@@ -1182,6 +1215,7 @@ class Tracker:
             self.last_match = self.history.last_match
         else:
             self.last_match = None
+        self.last_match_chart = None
         self.saw_menu = False
         self.playing_reads = 0
         self.miss_reads = 0
@@ -1279,6 +1313,7 @@ class Tracker:
         self.match_gained = 0
         self.match_balance = 0
         self.match_curve = [(0.0, 0.0)]
+        self.last_match_chart = None
         self.match_faction = display_faction(faction)
         self.last_profit = 0
         self.playing_reads = 0
@@ -1442,6 +1477,29 @@ class Tracker:
                     "role_xp_partial",
                 ):
                     self.last_match[key] = record.get(key)
+        self.last_match.setdefault("id", self.current_match_uid)
+        self.last_match.setdefault(
+            "started_at",
+            self.match_started_utc.isoformat() if self.match_started_utc else None,
+        )
+        self.last_match.setdefault(
+            "ended_at", datetime.now(timezone.utc).isoformat()
+        )
+        self.last_match_chart = {
+            "active": False,
+            "last": True,
+            "match_id": self.last_match.get("id") or self.current_match_uid,
+            "curve": list(self.match_curve),
+            "duration_s": self.last_match.get("duration_s") or 0,
+            "map": display_map_name(
+                self.last_match.get("map_raw") or self.last_match.get("map")
+            ) or "Unknown",
+            "faction": display_faction(self.last_match.get("faction")),
+            "partial": bool(self.last_match.get("partial")),
+            "net": self.last_match.get("balance"),
+            "ended_ts": datetime.now(timezone.utc).timestamp(),
+        }
+
         self.match_active = False
         self.playing_reads = 0
         self.miss_reads = 0

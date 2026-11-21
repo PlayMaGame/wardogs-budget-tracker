@@ -336,6 +336,18 @@ def _clock(seconds) -> str:
     return f"{total // 60}:{total % 60:02d}"
 
 
+def _duration_text(seconds) -> str:
+    try:
+        total = int(max(0.0, float(seconds)))
+    except (TypeError, ValueError):
+        total = 0
+    hours, rem = divmod(total, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours}h {minutes:02d}m"
+    return f"{minutes}m {secs:02d}s"
+
+
 def _month_splits(labels):
     """Return (fraction across the series, month name) at each month change."""
     names = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -572,7 +584,11 @@ class Overlay(threading.Thread):
         left, right = 58, width - 12
         chart_top, chart_bottom = 62, 146
 
-        self._text(hdc, "CURRENT MATCH", self.PAD + 3, 32, dim, self._font_label)
+        last = bool(chart.get("last"))
+        self._text(
+            hdc, "LAST MATCH" if last else "CURRENT MATCH",
+            self.PAD + 3, 32, dim, self._font_label,
+        )
         net = chart.get("net")
         net_value = None
         net_colour = text
@@ -594,22 +610,28 @@ class Overlay(threading.Thread):
                     28, net_colour, self._font_big,
                 )
 
-        if not chart.get("active"):
+        if not chart.get("active") and not last:
             self._text(hdc, "no active match", left, chart_top + 32, dim, self._font_label)
             return
 
-        started = chart.get("started_ts")
-        try:
-            elapsed = max(0.0, time.time() - float(started)) if started else 0.0
-        except (TypeError, ValueError):
-            elapsed = 0.0
+        if last:
+            try:
+                elapsed = max(0.0, float(chart.get("duration_s") or 0))
+            except (TypeError, ValueError):
+                elapsed = 0.0
+        else:
+            started = chart.get("started_ts")
+            try:
+                elapsed = max(0.0, time.time() - float(started)) if started else 0.0
+            except (TypeError, ValueError):
+                elapsed = 0.0
 
         meta_parts = []
         if chart.get("map"):
             meta_parts.append(str(chart["map"]))
         if chart.get("faction"):
             meta_parts.append(str(chart["faction"]))
-        meta_parts.append(_clock(elapsed))
+        meta_parts.append(_duration_text(elapsed) if last else _clock(elapsed))
         if chart.get("partial"):
             meta_parts.append("partial")
         self._text(
