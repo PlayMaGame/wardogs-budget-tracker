@@ -451,6 +451,7 @@ class Overlay(threading.Thread):
     PAD = 7
     PANEL_WIDTH = 560
     PANEL_HEIGHT = 368
+    HIDE_GRACE = 1.5
 
     def __init__(
         self,
@@ -480,6 +481,7 @@ class Overlay(threading.Thread):
         self._ready = threading.Event()
         self._hwnd = None
         self._visible = False
+        self._hide_since = None
         self._width = self.MIN_WIDTH
         self._height = self.HEIGHT
         self._panel = False
@@ -523,6 +525,23 @@ class Overlay(threading.Thread):
             return
         user32.ShowWindow(self._hwnd, SW_SHOWNOACTIVATE if visible else SW_HIDE)
         self._visible = visible
+
+    def _sync_visibility(self) -> None:
+        """Follow game focus without blinking on short focus changes."""
+        if self._foreground_is_game():
+            self._hide_since = None
+            self._show(True)
+            return
+        if not self._visible:
+            self._hide_since = None
+            return
+        now = time.monotonic()
+        if self._hide_since is None:
+            self._hide_since = now
+            return
+        if now - self._hide_since >= self.HIDE_GRACE:
+            self._hide_since = None
+            self._show(False)
 
     def _panel_open(self) -> bool:
         return self._panel
@@ -1043,7 +1062,7 @@ class Overlay(threading.Thread):
                 self._sync_panel()
                 return 0
             self._resize_if_needed()
-            self._show(self._foreground_is_game())
+            self._sync_visibility()
             if self._visible:
                 user32.InvalidateRect(hwnd, None, False)
             return 0
